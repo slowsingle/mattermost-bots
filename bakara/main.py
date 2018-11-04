@@ -1,61 +1,116 @@
+from flask import Flask, request
+import requests
+import json
+import slackweb
 from bakara.deck import Deck
 from bakara.player import Player 
 from bakara.banker import Banker 
 
-def main(is_debug):
-	# カードとプレイヤー、バンカーを用意する
-	deck = Deck()
-	deck.shuffle()
+app = Flask(__name__)
+mattermost = slackweb.Slack(url="http://192.168.11.10:8065/hooks/yyejzfdg6bdsxpkzb5k166pjmy")
 
-	if is_debug:
-		print("deck info:", len(deck.deck))
-		print("")
+@app.route('/')
+def welcome():
+    html = '<html><title>welcome</title>'
+    html = html + '<body>This is a BAKARA Server</body></html>'
+    return html
 
-	player = Player()
-	banker = Banker()
+# text input : "<you>hogehoge"
+@app.route('/matter', methods=['POST'])
+def post():
+    data = request.json
+    text = data['text']
 
-	# 1st round
-	player.first_action(deck)
-	banker.first_action(deck)
+    agent, text = get_called_agent_and_message(text)
 
-	if is_debug:
-		print("@@@ 1st round @@@")
-		print("=== Player ===")
-		out = list()
-		for c in player.have_cards:
-			out.append([c.get_mark(), c.get_number()])
-		print(out)
-		print("player score:", player._get_score())
-		print("*** Banker ***")
-		out = list()
-		for c in banker.have_cards:
-			out.append([c.get_mark(), c.get_number()])
-		print(out)
-		print("banker score:", banker._get_score())
-		print("deck info:", len(deck.deck))
-		print("")
+    if text.find('player') or text.find('Player'):
+        bet = 'Player'
+    elif text.find('banker') or text.find('Banker'):
+        bet = 'Banker'
+    else:
+        mattermost.notify(text='PlayerかBankerのどちらかを指定してください。英語の大文字小文字は問いません。')
+        return json.dumps(dict())
 
-	# 2nd round
-	player.second_action(deck)
-	banker.second_action(deck, player=player)
+    mattermost.notify(text='あなたは{}の勝利に賭けました。ゲームを始めます。'.format(bet))
 
-	if is_debug:
-		print("@@@ 2nd round @@@")
-		print("=== Player ===")
-		out = list()
-		for c in player.have_cards:
-			out.append([c.get_mark(), c.get_number()])
-		print(out)
-		print("player score:", player._get_score())
-		print("*** Banker ***")
-		out = list()
-		for c in banker.have_cards:
-			out.append([c.get_mark(), c.get_number()])
-		print(out)
-		print("banker score:", banker._get_score())
-		print("deck info:", len(deck.deck))
+    # カードとプレイヤー、バンカーを用意する
+    deck = Deck()
+    deck.shuffle()
+    player = Player()
+    banker = Banker()
+    print("0th deck info:", len(deck.deck))
+
+    # 1st round
+    player.first_action(deck)
+    banker.first_action(deck)
+    _debug_print(round_number=1)
+
+    # 2nd round
+    player.second_action(deck)
+    banker.second_action(deck, player=player)
+    _debug_print(round_number=2)
+
+    # show result
+    player_score = player._get_score()
+    banker_score = banker._get_score()
+    if player_score > banker_score:
+        res = 'player'
+        mattermost.notify(text='playerの勝利です。')
+    elif player_score == banker_score:
+        res = 'tie'
+        mattermost.notify(text='引き分けです。')
+    else:
+        res = 'banker'
+        mattermost.notify(text='bankerの勝利です。')
+
+    if res == bet:
+        mattermost.notify(text='あなたの予想は当たりました。勝利です。')
+    else:
+        mattermost.notify(text='あなたの予想は外れました。敗北です。')
+
+    return json.dumps(dict())
 
 
+def get_called_agent_and_message(text):
+    index_1 = text.find('<')
+    index_2 = text.find('>')
+    if index_1 < 0 or index_2 < 0:
+        raise ValueError("text is invalid")
 
-if __name__ == "__main__":
-	main(is_debug=True)
+    agent = text[(index_1 + 1):index_2]
+    message = text[(index_2 + 1):]
+
+    return agent, message
+
+def _debug_print(round_number):
+    if round_number == 1:
+        print("@@@ 1st round @@@")
+    elif round_number == 2:
+        print("@@@ 2nd round @@@")
+    else:
+        raise ValueError()
+
+    print("=== Player ===")
+    out = list()
+    for c in player.have_cards:
+        out.append([c.get_mark(), c.get_number()])
+    print(out)
+    print("player score:", player._get_score())
+    print("*** Banker ***")
+    out = list()
+    for c in banker.have_cards:
+        out.append([c.get_mark(), c.get_number()])
+    print(out)
+    print("banker score:", banker._get_score())
+
+    if round_number == 1:
+        print("1st deck info:", len(deck.deck))
+    else:
+        print("2nd deck info:", len(deck.deck))
+    
+    print("@@@@@@@@@@@@@@@@@")
+
+
+if __name__ == '__main__':
+    app.debug = True
+    app.run(host='0.0.0.0', port=8888)
