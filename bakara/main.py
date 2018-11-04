@@ -2,6 +2,7 @@ from flask import Flask, request
 import requests
 import json
 import slackweb
+import copy
 from bakara.deck import Deck
 from bakara.player import Player 
 from bakara.banker import Banker 
@@ -23,9 +24,9 @@ def post():
 
     agent, text = get_called_agent_and_message(text)
 
-    if text.find('player') or text.find('Player'):
+    if text.find('player') >= 0 or text.find('Player') >= 0:
         bet = 'Player'
-    elif text.find('banker') or text.find('Banker'):
+    elif text.find('banker') >= 0 or text.find('Banker') >= 0:
         bet = 'Banker'
     else:
         mattermost.notify(text='PlayerかBankerのどちらかを指定してください。英語の大文字小文字は問いません。')
@@ -43,24 +44,24 @@ def post():
     # 1st round
     player.first_action(deck)
     banker.first_action(deck)
-    _debug_print(round_number=1)
+    _debug_print(round_number=1, deck, player, banker)
 
     # 2nd round
     player.second_action(deck)
     banker.second_action(deck, player=player)
-    _debug_print(round_number=2)
+    _debug_print(round_number=2, deck, player, banker)
 
     # show result
     player_score = player._get_score()
     banker_score = banker._get_score()
     if player_score > banker_score:
-        res = 'player'
+        res = 'Player'
         mattermost.notify(text='playerの勝利です。')
     elif player_score == banker_score:
-        res = 'tie'
+        res = 'Tie'
         mattermost.notify(text='引き分けです。')
     else:
-        res = 'banker'
+        res = 'Banker'
         mattermost.notify(text='bankerの勝利です。')
 
     if res == bet:
@@ -82,7 +83,11 @@ def get_called_agent_and_message(text):
 
     return agent, message
 
-def _debug_print(round_number):
+def _debug_print(round_number, _deck, _player, _banker):
+    deck = copy.deepcopy(_deck)
+    player = copy.deepcopy(_player)
+    banker = copy.deepcopy(_banker)
+
     if round_number == 1:
         print("@@@ 1st round @@@")
     elif round_number == 2:
