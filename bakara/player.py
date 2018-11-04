@@ -8,7 +8,7 @@ class Player(Person):
 		sum_score = 0
 		for c in self.have_cards:
 			num = c.get_number()
-			num = 10 if num > 10 else num
+			num = 0 if num >= 10 else num
 			sum_score += num
 		return sum_score % 10
 

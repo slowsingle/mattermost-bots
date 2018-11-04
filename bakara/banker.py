@@ -8,7 +8,7 @@ class Banker(Person):
 		sum_score = 0
 		for c in self.have_cards:
 			num = c.get_number()
-			num = 10 if num > 10 else num
+			num = 0 if num >= 10 else num
 			sum_score += num
 		return sum_score % 10
 
@@ -24,6 +24,9 @@ class Banker(Person):
 			player_pull_more = False
 		elif len(player.have_cards) == 3:
 			player_pull_more = True
+			player_3rd_card = player.have_cards[2]
+			_number = player_3rd_card.get_number()
+			player_3rd_number = 0 if _number >= 10 else _number
 		else:
 			raise ValueError()
 
@@ -33,32 +36,30 @@ class Banker(Person):
 			self.pull_cards(deck, n_pulls=1)
 			next_score = self._get_score()
 		elif current_score == 3:
-			if player_pull_more and (player._get_score() == 8):
+			if player_pull_more and (player_3rd_number == 8):
 				next_score = current_score
 			else:
 				self.pull_cards(deck, n_pulls=1)
 				next_score = self._get_score()
 		elif current_score == 4:
-			if player_pull_more and (player._get_score() in [0, 1, 8, 9]):
+			if player_pull_more and (player_3rd_number in [0, 1, 8, 9]):
 				next_score = current_score
 			else:
 				self.pull_cards(deck, n_pulls=1)
 				next_score = self._get_score()
 		elif current_score == 5:
-			if player_pull_more and (player._get_score() in [4, 5, 6, 7]):
+			if player_pull_more and (player_3rd_number in [4, 5, 6, 7]):
 				next_score = current_score
 			else:
 				self.pull_cards(deck, n_pulls=1)
 				next_score = self._get_score()
 		elif current_score == 6:
-			if player_pull_more and (player._get_score() in [6, 7]):
+			if player_pull_more and (player_3rd_number in [6, 7]):
 				next_score = current_score
 			else:
 				self.pull_cards(deck, n_pulls=1)
 				next_score = self._get_score()
-		elif current_score == 7:
-			next_score = current_score
-		elif 8 <= current_score <= 9:
+		elif 7 <= current_score <= 9:
 			next_score = current_score
 		else:
 			raise ValueError()
