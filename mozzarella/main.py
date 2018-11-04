@@ -16,14 +16,14 @@ def welcome():
     html = html + '<body>Moooooooooooozzarrrrrrrrrrrellaaaaaa</body></html>'
     return html
 
+# text input : "<you>hogehoge"
 @app.route('/matter', methods=['POST'])
 def post():
-    print('debug:', 'OK')
     data = request.json
     text = data['text']
 
-    _, mozzarella = text.split(' ')
-    print('debug:', mozzarella)
+    agent, mozzarella = get_called_agent_and_message(text)
+    print('debug:', agent, mozzarella)
 
     splited_mozzarella = split_mozzarella(mozzarella)
     print('debug:', splited_mozzarella)
@@ -31,11 +31,34 @@ def post():
     new_mozzarella = add_hogehoge(splited_mozzarella)
     print('debug:', new_mozzarella)
 
-    text = ''.join(new_mozzarella)
+    new_text = ''.join(new_mozzarella)
 
-    mattermost.notify(text=text)
+    if len(new_text) < 30:
+        attachments = [{"text": '### ' + new_text, "image_url": "https://i.imgur.com/jfe9foM.jpg"}]
+    elif len(new_text) < 50:
+        attachments = [{"text": '## ' + new_text, "image_url": "https://i.imgur.com/YJ9kY2F.png"}]
+    elif len(new_text) < 75:
+        attachments = [{"text": '# ' + new_text, "image_url": "https://i.imgur.com/6snXP9M.jpg"}]
+    else:
+        special_text = "いつまでやってるの？"
+        attachments = [{"text": '#### ' + special_text, "image_url": "https://i.imgur.com/kyjW6W3.jpg"}]
+
+    #mattermost.notify(text=text)
+    mattermost.notify(attachments=attachments)
 
     return json.dumps(dict())
+
+
+def get_called_agent_and_message(text):
+    index_1 = text.find('<')
+    index_2 = text.find('>')
+    if index_1 < 0 or index_2 < 0:
+        raise ValueError("text is invalid")
+
+    agent = text[(index_1 + 1):index_2]
+    message = text[(index_2 + 1):]
+
+    return agent, message
 
 
 '''
@@ -74,5 +97,3 @@ def split_mozzarella(word):
 if __name__ == '__main__':
     app.debug = True
     app.run(host='0.0.0.0', port=8888)
-
-    
