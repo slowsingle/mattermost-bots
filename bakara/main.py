@@ -44,12 +44,13 @@ def post():
     # 1st round
     player.first_action(deck)
     banker.first_action(deck)
-    _debug_print(round_number=1, deck, player, banker)
+    _dealer_message(1, deck, player, banker)
+
 
     # 2nd round
     player.second_action(deck)
     banker.second_action(deck, player=player)
-    _debug_print(round_number=2, deck, player, banker)
+    _dealer_message(2, deck, player, banker)
 
     # show result
     player_score = player._get_score()
@@ -83,10 +84,13 @@ def get_called_agent_and_message(text):
 
     return agent, message
 
-def _debug_print(round_number, _deck, _player, _banker):
+def _dealer_message(round_number, _deck, _player, _banker, is_debug=True):
     deck = copy.deepcopy(_deck)
     player = copy.deepcopy(_player)
     banker = copy.deepcopy(_banker)
+
+    _card_info = ":{}: **{}** "
+    mark2mark = {'H': 'heart', 'D': 'diamonds', 'C': 'clubs', 'S': 'spades'}
 
     if round_number == 1:
         print("@@@ 1st round @@@")
@@ -96,17 +100,20 @@ def _debug_print(round_number, _deck, _player, _banker):
         raise ValueError()
 
     print("=== Player ===")
-    out = list()
+    player_text = ''
     for c in player.have_cards:
-        out.append([c.get_mark(), c.get_number()])
-    print(out)
+        player_text += _card_info.format(mark2mark[c.get_mark()], c.get_number())
+    print(player_text)
     print("player score:", player._get_score())
     print("*** Banker ***")
-    out = list()
+    banker_text = ''
     for c in banker.have_cards:
-        out.append([c.get_mark(), c.get_number()])
-    print(out)
+        banker_text += _card_info.format(mark2mark[c.get_mark()], c.get_number())
+    print(banker_text)
     print("banker score:", banker._get_score())
+
+    mattermost.notify(text='Player {}'.format(player_text))
+    mattermost.notify(text='Banker {}'.format(banker_text))
 
     if round_number == 1:
         print("1st deck info:", len(deck.deck))
