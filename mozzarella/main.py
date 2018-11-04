@@ -8,7 +8,7 @@ import random
 # コメントアウトがとても頭が弱い感じです。
 
 app = Flask(__name__)
-mattermost = slackweb.Slack(url="")
+mattermost = slackweb.Slack(url="http://192.168.11.10:8065/hooks/yyejzfdg6bdsxpkzb5k166pjmy")
 
 @app.route('/')
 def welcome():
@@ -73,4 +73,6 @@ def split_mozzarella(word):
 
 if __name__ == '__main__':
     app.debug = True
-    app.run(host='0.0.0.0', port=5353)
+    app.run(host='0.0.0.0', port=8888)
+
+    
