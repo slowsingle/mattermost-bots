@@ -14,6 +14,20 @@ class Card(object):
 	def get_number(self):
 		return self.id % n_card_per_mark + 1
 
+
+def num2symbol(num):
+	if num == 1:
+		return 'A'
+	elif num == 11:
+		return 'J'
+	elif num == 12:
+		return 'Q'
+	elif num == 13:
+		return 'K'
+	else:
+		return str(num)
+		
+
 if __name__ == "__main__":
 	for i in range(n_card_per_mark * 4):
 		card = Card(i)
