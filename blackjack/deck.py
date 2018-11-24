@@ -1,5 +1,7 @@
+import time
 import random
-from bakara.card import Card
+import numpy as np
+from blackjack.card import Card
 
 class Deck(object):
 	def __init__(self, have_joker=False):
@@ -8,6 +10,7 @@ class Deck(object):
 			raise NotImplementedError
 
 		self._set_deck()
+
 
 	def shuffle(self):
 		random.shuffle(self.deck)
