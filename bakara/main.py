@@ -9,6 +9,7 @@ from bakara.card import num2symbol
 from bakara.deck import Deck
 from bakara.player import Player 
 from bakara.banker import Banker 
+import yaml
 
 class STATUS:
     WAITING = 0
@@ -20,7 +21,7 @@ mattermost = slackweb.Slack(url="http://192.168.11.10:8065/hooks/yyejzfdg6bdsxpk
 
 status = STATUS.WAITING
 
-with open("***.yaml", 'r') as f:
+with open("bakara/images.yaml", 'r') as f:
     images_dict = yaml.load(f)
 members = list(images_dict.keys())
 
@@ -33,12 +34,13 @@ def welcome():
 # text input : "<you>hogehoge"
 @app.route('/matter', methods=['POST'])
 def post():
+    global status
     data = request.json
     text = data['text']
 
     agent, text = get_called_agent_and_message(text)
 
-    if agent.find('<bakara>') < 0:
+    if agent.find('bakara') < 0:
         print("calling agent is invalid")
         return json.dumps(dict())
 
@@ -51,14 +53,17 @@ def post():
                 "image_url": images_dict[player_name]
                 }]
             mattermost.notify(attachments=player_attachments)
+            time.sleep(2)
 
             banker_attachments = [{
                 "text": "Bankerは {} です。".format(banker_name),
                 "image_url": images_dict[banker_name]
                 }]
             mattermost.notify(attachments=banker_attachments)
+            time.sleep(2)
 
-            mattermost.notify(text='彼女たちがあなたの応援を必要としています。PlayerとBankerのどちらが勝つか予測してください。英語の大文字小文字は問いません。')
+            mattermost.notify(text='PlayerとBankerのどちらが勝つか予測してください。英語の大文字小文字は問いません。')
+            time.sleep(1)
 
             status = STATUS.SELECTING
         else:
@@ -75,6 +80,7 @@ def post():
             return json.dumps(dict())
 
         mattermost.notify(text='あなたは{}の勝利に賭けました。ゲームを始めます。'.format(bet))
+        time.sleep(1)
 
         # カードとプレイヤー、バンカーを用意する
         deck = Deck()
@@ -85,13 +91,14 @@ def post():
 
         # 1st round
         mattermost.notify(text='1st roundに入ります。カードをオープンします。')
+        time.sleep(1)
         player.first_action(deck)
         banker.first_action(deck)
         _dealer_message(1, deck, player, banker)
 
-
         # 2nd round
         mattermost.notify(text='2nd roundに入ります。PlayerおよびBankerのスコアに応じてカードがオープンされるかどうかが変わります。')
+        time.sleep(1)
         player.second_action(deck)
         banker.second_action(deck, player=player)
         _dealer_message(2, deck, player, banker)
@@ -108,11 +115,13 @@ def post():
         else:
             res = 'Banker'
             mattermost.notify(text='Bankerの勝利です。')
+        time.sleep(1)
 
         if res == bet:
             mattermost.notify(text='おめでとうございます。あなたの予想は当たりました。勝利です。')
         else:
             mattermost.notify(text='残念でした。あなたの予想は外れました。敗北です。')
+        time.sleep(1)
 
         status = STATUS.WAITING
     else:
@@ -160,8 +169,11 @@ def _dealer_message(round_number, _deck, _player, _banker, is_debug=True):
     print(banker_text)
     print("banker score:", banker._get_score())
 
+    time.sleep(2)
     mattermost.notify(text='Player {} : スコアは {} です。'.format(player_text, player._get_score()))
+    time.sleep(2)
     mattermost.notify(text='Banker {} : スコアは {} です。'.format(banker_text, banker._get_score()))
+    time.sleep(1)
 
     if round_number == 1:
         print("1st deck info:", len(deck.deck))
